@@ -7,6 +7,7 @@ import multiprocessing as mp  # speed up collecting data
 import urllib2  # for making requests to the HackerNews API
 import re
 import psycopg2
+import hashlib
 
 from bs4 import BeautifulSoup # for parsing HackerNews
 from hackernews import HackerNews # for getting all the HackerNews posting ids
@@ -82,7 +83,11 @@ class Scraper(object):
         self.logger.debug("Combining results")
         while self.output.qsize():
             phrase = self.output.get()
-            self.phrases.append(phrase)
+            try:
+                phrase = phrase.decode("utf-8").encode("ascii", "ignore")
+                self.phrases.append(phrase)
+            except UnicodeEncodeError:
+                self.logger.warning("Phrase %s could not be decoded " %phrase)
 
     @classmethod
     def _split_into_sublists(cls, lst, size):
@@ -155,10 +160,31 @@ class Scraper(object):
         """
         Inserts the data into the Postgres DB.
         """
-        self.logger.debug("Inserting data into database")
-        conn = psycopg2.connect(database="textclassify", user="justinharjanto")
-        cur = conn.cursor()
+        self.logger.debug("Inserting data in to the database")
+        if len(self.phrases) == 0:
+            self.logger.info("No phrases to insert!")
+        else:
+            self.logger.debug("Attempting to insert %d phrases into the database" \
+                                % len(self.phrases))
+            conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+            cur = conn.cursor()
 
-        sql_string = "INSERT INTO phrases (phrase, link_id, record_date) \
-                      VALUES (%s, to_timestamp(%s), %s) "
-        cur.execute(sql_string)
+            successful_insertion = 0
+
+            for phrase in self.phrases:
+                self.logger.debug("Attempting to insert %s..." % phrase)
+                phrase_hash = int(hashlib.sha1(phrase).hexdigest(), 16) % 10 ** 8
+                phrase = phrase.replace("'", "''") # escape quotes
+                sql_string = "INSERT INTO phrases (phrase, phrase_hash) VALUES ('%s', '%d')" \
+                              % (phrase, phrase_hash)
+                try:
+                    cur.execute(sql_string)
+                    self.logger.debug("Successfully inserted %s" % phrase)
+                    successful_insertion += 1
+                    conn.commit()
+                except psycopg2.IntegrityError: # duplicate comments not allowed
+                    self.logger.warn("The phrase '%s' is already in the database" % phrase)
+                    conn.rollback()
+
+            self.logger.debug("Successfully inserted %d / %d phrases into the db" \
+                                % (successful_insertion, len(self.phrases)))

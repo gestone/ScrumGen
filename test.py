@@ -6,5 +6,6 @@ html = urllib2.urlopen('http://hacks.mit.edu/Hacks/by_year/1992/spellbook/').rea
 soup = BeautifulSoup(html, "html.parser")
 text = soup.findAll(text=True)
 # [s.extract() for s in soup(['style', 'script', '[document]', 'head', 'title'])]
+urllib2.urlopen.func_name
 visible_text = soup.findAll(text = True)
 print visible_text
