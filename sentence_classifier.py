@@ -4,6 +4,7 @@ funny or not.
 """
 import string
 import math
+import psycopg2
 
 from nltk import bigrams
 from nltk.corpus import stopwords
@@ -18,15 +19,17 @@ class SentenceClassifier(object):
 
     STOP_WORDS = stopwords.words("english")
 
-    def __init__(self):
+    def __init__(self, logger):
         """
         Constructs an untrained Naive Bayes classifier.
         """
+        self.logger = logger
         self.vocab = Counter()
         self.funny = Counter()
         self.not_funny = Counter()
         self.num_funny = 0.0
         self.num_not_funny = 0.0
+        self._train_classifier_from_db()
 
     def classify(self, sentence):
         """
@@ -37,7 +40,8 @@ class SentenceClassifier(object):
         """
 
         if not self.vocab:
-            raise ValueError("Classifier has not been trained yet")
+            self.logger.info("Classifier has not been trained yet")
+            return True
 
         counts = self._clean_and_count_sentence(sentence)
 
@@ -83,6 +87,7 @@ class SentenceClassifier(object):
         the sentence was funny or not.
         """
 
+        self.logger.debug("Training classifier on sentence, '%s'" % sentence)
         counts = self._clean_and_count_sentence(sentence)
 
         self.vocab += counts
@@ -94,19 +99,44 @@ class SentenceClassifier(object):
             self.num_not_funny += 1.0
 
 
-    def train_classifier_from_file(self, file_name, funny):
+    def _train_classifier_from_db(self):
         """
-        Trains the classifier from a text file of sentences with each sentence
+        Trains the classifier from a database of sentences with each sentence
         deliminated by a new line character. The param, 'funny' represents
         if the sentences contained in the file are classified as funny or not.
-        If the file does not exist, an IOError will be thrown.
         """
-        with open(file_name) as file_contents:
-            content = file_contents.readlines()
+        self.logger.debug("Querying sentences from the DB...")
+        conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+        cur = conn.cursor()
+        cur.execute("SELECT sentence, funny FROM funny_sentences")
+        self.logger.debug("Successfully retrieved sentences from the DB")
 
-        for sentence in content:
-            self.train_classifier(sentence, funny)
+        res = cur.fetchone()
+        while res:
+            self.train_classifier(res[0], res[1])
+            res = cur.fetchone()
 
+
+    def insert_sentence_into_db(self, sentence, funny):
+        """
+        Inserts a sentence into the database of sentences. The param,
+        'sentence' is the sentence to be inserted, 'funny' is whether or not
+        the sentence was funny or not.
+        """
+        conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+        cur = conn.cursor()
+
+        self.logger.debug("Attempting to insert %s..." % sentence)
+        sentence = sentence.replace("'", "''") # escape quotes
+        sql_string = "INSERT INTO funny_sentences (sentence, funny) VALUES ('%s', '%s')" \
+                      % (sentence, funny)
+        try:
+            cur.execute(sql_string)
+            self.logger.debug("Successfully inserted %s" % sentence)
+            conn.commit()
+        except psycopg2.IntegrityError:
+            self.logger.warn("The phrase '%s' could not be inserted into the database" % sentence)
+            conn.rollback()
 
     def _clean_and_count_sentence(self, sentence):
         """

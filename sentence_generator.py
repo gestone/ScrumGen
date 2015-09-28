@@ -1,14 +1,13 @@
-import pattern.en as en
+"""
+Generates random sentences using Markov Models.
+"""
 import random
-import itertools
 import re
-import json # for storage in the PostgreSQL DB
+import psycopg2
 
-from itertools import cycle
 from nltk import bigrams  # to get tuples from a sentence in the form: (s0, s1), (s1, s2)
-from pattern.en import parsetree
 
-class SentenceGenerator:
+class SentenceGenerator(object):
     """
     Generates random sentences. Since SentenceGenerator is
     implemented using a Markov Model, input data must first
@@ -16,53 +15,24 @@ class SentenceGenerator:
     sentences.
     """
 
-    def __init__(self, classifier):
+    def __init__(self, classifier, logger):
         """
         Constructs a new instance of SentenceGenerator with
         an untrained Markov Model.
         """
         self.model = {}
         self.classifier = classifier
+        self.logger = logger
+        self._train_model()
 
-    def _is_end_word(self, word):
+    @classmethod
+    def _is_end_word(cls, word):
         """
         Checks to see if the word is a terminal word,
         true if so, false otherwise.
         """
-        return bool(re.match("\w+[:.?!*\\-]+", word))
+        return bool(re.match(r"\w+[:.?!*\\-]+", word))
 
-    def _is_verb(self, word):
-        return parsetree(word)[0].words[0].type == "VB"
-
-
-    def to_past_tense(self, sentence):
-        """
-        Converts the given sentence to a given tense. The
-        param, sentence is a string that represents a string.
-        Returns a string representing the sentence
-        in the specified tense.
-        """
-        punc, sentence = sentence[-1], sentence[0:-1] # to avoid parsing issues with library
-        parsed_chunks = parsetree(sentence)[0].words # since there's only 1 sentence
-
-
-        updated_sentence = [en.conjugate(c.string, "1sgp").strip() if c.type == "VBP" else c.string.strip()
-                            for c in parsed_chunks]
-
-        # combine all the stray ' that the parser parses
-        final_sentence = []
-        next_elem = updated_sentence.pop(0)
-        while updated_sentence:
-            cur, next_elem = next_elem, updated_sentence.pop(0)
-            if "'" in next_elem or "," in next_elem:
-                final_sentence.append(cur + next_elem)
-                if updated_sentence:
-                    next_elem = updated_sentence.pop(0)
-            else:
-                final_sentence.append(cur)
-
-        final_sentence.append(next_elem)
-        return " ".join(final_sentence) + punc
 
     def train_model(self, input_data):
         """
@@ -71,11 +41,12 @@ class SentenceGenerator:
         contain ending punctuation, a "." will be appended to the last
         word contained.
         """
+        self.logger.debug("Training generator on '%s' " % input_data)
         split_data = input_data.split()
 
         # Clean the input and make sure that the last element
         # has some form of punctuation, if not, append '.'.
-        if split_data and not self._is_end_word(split_data[-1]):
+        if split_data and not SentenceGenerator._is_end_word(split_data[-1]):
             split_data[-1] += "."
 
         # bigrams returns -> [(s0, s1), (s1, s2)...]
@@ -87,8 +58,15 @@ class SentenceGenerator:
             all_pos_states.append(pos_state)
             self.model[init_state] = all_pos_states
 
+    def _train_model(self):
+        """
+        Trains the model with the results back from the Postgres database.
+        """
+        res = self._query_data()
+        for phrase in res:
+            self.train_model(phrase[0])
 
-    def generate_sentences(self, n = 1, initial_word = None, past_tense = False):
+    def generate_sentences(self, num_sentences=1, initial_word=None):
         """
         Randomly generates n number of sentences with an initial word.
         By default, n = 1 and the initial word will be random.
@@ -108,7 +86,7 @@ class SentenceGenerator:
         else:
             cur_state = random.choice(self.model.keys())
 
-        while len(all_sentences) < n:
+        while len(all_sentences) < num_sentences:
             cur_sentence = []
             cur_sentence.append(cur_state)
 
@@ -121,16 +99,20 @@ class SentenceGenerator:
 
             # finished generating a sentence, generate a new state if not passed one
             cur_state = initial_word if initial_word else random.choice(self.model.keys())
-            full_sentence = " ".join(cur_sentence) if not past_tense else self.to_past_tense(" ".join(cur_sentence))
+            full_sentence = " ".join(cur_sentence)
 
             if self.classifier.classify(full_sentence):
                 all_sentences.append(full_sentence)
 
         return all_sentences
 
-
-    def get_json_rep(self):
+    def _query_data(self):
         """
-        Returns the JSON representation of the underlying Markov Model.
+        Queries the phrases to be trained on from the PostgresDB.
         """
-        return json.dumps(self.model)
+        self.logger.debug("Querying phrases from the DB...")
+        conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+        cur = conn.cursor()
+        cur.execute("SELECT phrase FROM phrases ORDER BY fetch_date DESC")
+        self.logger.debug("Success, returning results")
+        return iter(cur.fetchall())
