@@ -66,18 +66,11 @@ class SentenceGenerator(object):
         for phrase in res:
             self.train_model(phrase[0])
 
-    def generate_sentences(self, num_sentences=1, initial_word=None):
+    def generate_sentence(self, initial_word=None):
         """
-        Randomly generates n number of sentences with an initial word.
-        By default, n = 1 and the initial word will be random.
-        If the initial word is not in the model, an ValueError exception
-        will be thrown.
-        Returns a list of strings each of which is a sentence.
+        Randomly generates a sentence with an initial word. If no initial
+        word is specified, a random word will be chosen as the start word.
         """
-
-        all_sentences = []
-
-        # if a word was passed in, use that as the state
         if initial_word:
             # verify that its in the dictionary
             if initial_word not in self.model:
@@ -86,13 +79,14 @@ class SentenceGenerator(object):
         else:
             cur_state = random.choice(self.model.keys())
 
-        while len(all_sentences) < num_sentences:
+        # try generating a sentence 10 times, if not possible, return err msg
+        for try_num in xrange(10):
+            self.logger.debug("Try #%d generating a sentence" % try_num)
             cur_sentence = []
             cur_sentence.append(cur_state)
 
             while not self._is_end_word(cur_state) and cur_state in self.model.keys():
-                # get all possible states and randomly
-                # choose a state to go to
+                # get all possible states and randomly choose a state to go to
                 all_future_states = self.model[cur_state]
                 cur_state = random.choice(all_future_states)
                 cur_sentence.append(cur_state)
@@ -102,9 +96,10 @@ class SentenceGenerator(object):
             full_sentence = " ".join(cur_sentence)
 
             if self.classifier.classify(full_sentence):
-                all_sentences.append(full_sentence)
+                self.logger.debug("Successfully generated a sentence!")
+                return full_sentence
 
-        return all_sentences
+        return "Error: Could not generate sentence"
 
     def _query_data(self):
         """

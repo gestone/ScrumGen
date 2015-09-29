@@ -111,10 +111,9 @@ class SentenceClassifier(object):
         cur.execute("SELECT sentence, funny FROM funny_sentences")
         self.logger.debug("Successfully retrieved sentences from the DB")
 
-        res = cur.fetchone()
-        while res:
-            self.train_classifier(res[0], res[1])
-            res = cur.fetchone()
+        res = cur.fetchall()
+        for sentence, funny in res:
+            self.train_classifier(sentence, funny)
 
 
     def insert_sentence_into_db(self, sentence, funny):
