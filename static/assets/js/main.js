@@ -82,16 +82,14 @@
         $("#intro").hide();
         $("#response-container").show();
         $("#sentence").removeData("typed");
-        // $.get("http://localhost:3000/sentence", function(data) {
+        $.get("http://localhost:5000/sentence", function(data) {
             $("#sentence").typed({
-                // strings: [data.sentence],
-                strings: ["I put a tuple in firebase."],
+                strings: [data.sentence],
                 typeSpeed: 0,
                 showCursor: false
             });
-            // setupFeedBackButtons(data.sentence);
-            setupFeedBackButtons("I put a tuple in firebase.");
-        // });
+            setupFeedBackButtons(data.sentence);
+        });
     }
 
     /**
