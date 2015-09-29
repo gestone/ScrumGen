@@ -10,16 +10,9 @@ from logging.handlers import RotatingFileHandler
 from sentence_generator import SentenceGenerator
 from sentence_classifier import SentenceClassifier
 
-
 app = Flask(__name__)
 
-@app.before_first_request
-def schedule_tasks():
-    """
-    Schedules the tasks to hit the Reddit API and scrapes HackerNews
-    to put into the db.
-    """
-    print "TODO: IMPLEMENT SCHEDULER"
+SCRAPING_INTERVAL = 3600
 
 @app.route("/sentence")
 def generate_sentence():
@@ -74,10 +67,10 @@ def setup_logger():
     """
     formatter = logging.Formatter("[%(asctime)s] {%(pathname)s%(lineno)d} %(message)s")
     handler = RotatingFileHandler("server.log", maxBytes=10000, backupCount=1)
-    handler.setLevel(logging.INFO)
+    handler.setLevel(logging.DEBUG)
     handler.setFormatter(formatter)
     app.logger.addHandler(handler)
-    app.logger.setLevel(logging.INFO)
+    app.logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
     setup_logger()
