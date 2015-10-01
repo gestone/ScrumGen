@@ -1,1 +1,4 @@
 *.pyc
+*.txt
+*.log
+webserver/node_modules
