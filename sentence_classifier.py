@@ -39,7 +39,7 @@ class SentenceClassifier(object):
         trained, throws a ValueError.
         """
 
-        if not self.vocab:
+        if not self.vocab or not self.not_funny or not self.funny:
             self.logger.info("Classifier has not been trained yet")
             return True
 
@@ -55,7 +55,7 @@ class SentenceClassifier(object):
         # with small probabilities.
 
         ll_prob_funny = math.log(p_funny_prior)
-        ll_prob_not_funny = math.log(p_non_funny_prior)
+        ll_prob_not_funny = math.log(p_non_funny_prior) if p_non_funny_prior == 0 else 0
 
         sum_funny_values = float(sum(self.funny.values()))
         sum_non_funny_values = float(sum(self.not_funny.values()))

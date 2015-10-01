@@ -79,9 +79,8 @@ class SentenceGenerator(object):
         else:
             cur_state = random.choice(self.model.keys())
 
-        # try generating a sentence 10 times, if not possible, return err msg
-        for try_num in xrange(10):
-            self.logger.debug("Try #%d generating a sentence" % try_num)
+        # try generating a sentence 1000 infinite times, if not possible, return err msg
+        for _ in xrange(1000):
             cur_sentence = []
             cur_sentence.append(cur_state)
 
@@ -99,7 +98,8 @@ class SentenceGenerator(object):
                 self.logger.debug("Successfully generated a sentence!")
                 return full_sentence
 
-        return "Error: Could not generate sentence"
+        return "error could not generate sentence"
+
 
     def _query_data(self):
         """
