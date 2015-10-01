@@ -4,9 +4,11 @@ REST API for generating sentences.
 
 import logging
 import psycopg2
+import threading
 
 from flask import Flask, jsonify, request
 from logging.handlers import RotatingFileHandler
+from scraper import Scraper
 from sentence_generator import SentenceGenerator
 from sentence_classifier import SentenceClassifier
 
@@ -72,6 +74,23 @@ def setup_logger():
     app.logger.addHandler(handler)
     app.logger.setLevel(logging.DEBUG)
 
+def scrape():
+    """
+    Sets up the scraper to scrape HN and Reddit.
+    """
+    app.logger.info("Scraping Reddit")
+
+    scrape_reddit = Scraper(app.logger)
+    scrape_reddit.gather_reddit_data()
+
+    app.logger.info("Finished gathering data, inserting into DB")
+    scrape_reddit.insert_into_db()
+
+    app.logger.info("Finished inserting into DB, sleeping for %d minutes..." % \
+            (SCRAPING_INTERVAL / 60.0))
+    threading.Timer(SCRAPING_INTERVAL, scrape).start()
+
 if __name__ == "__main__":
     setup_logger()
+    scrape()
     app.run()
