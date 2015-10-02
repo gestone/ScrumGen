@@ -1,9 +1,10 @@
 """
 Generates random sentences using Markov Models.
 """
+import psycopg2
 import random
 import re
-import psycopg2
+import string
 
 from nltk import bigrams  # to get tuples from a sentence in the form: (s0, s1), (s1, s2)
 
@@ -42,6 +43,7 @@ class SentenceGenerator(object):
         word contained.
         """
         self.logger.debug("Training generator on '%s' " % input_data)
+
         split_data = input_data.split()
 
         # Clean the input and make sure that the last element
@@ -79,7 +81,7 @@ class SentenceGenerator(object):
         else:
             cur_state = random.choice(self.model.keys())
 
-        # try generating a sentence 1000 infinite times, if not possible, return err msg
+        # try generating a sentence 1000 times, if not possible, return err msg
         for _ in xrange(1000):
             cur_sentence = []
             cur_sentence.append(cur_state)

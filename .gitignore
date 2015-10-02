@@ -1,4 +1,4 @@
 *.pyc
 *.txt
-*.log
+*.log*
 webserver/node_modules

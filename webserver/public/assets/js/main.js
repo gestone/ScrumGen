@@ -5,6 +5,7 @@
     var HEIGHT_SCALE = 5;
     var WINDOW_CUTOFF = 1000; // to rescale properly for mobile devices
     var HOST = "localhost:8080";
+    var SENTENCE = "";
 
     /**
     * Sets the initial state of the page. Hides the response
@@ -82,29 +83,30 @@
         $("#gen-sentence-again").hide();
         $("#intro").hide();
         $("#response-container").show();
+        $("#feedback-container").hide();
         $("#sentence").removeData("typed");
         $.get("http://" + HOST + "/sentence", function(data) {
-            console.log(data);
             data = JSON.parse(data);
+            SENTENCE = data.sentence;
             $("#sentence").typed({
                 strings: [data.sentence],
                 typeSpeed: 0,
-                showCursor: false
+                showCursor: false,
+                callback: setupFeedBackButtons
             });
-            setupFeedBackButtons(data.sentence);
         });
     }
 
     /**
     * Sets up the feedback buttons along with the appropriate onclick
     * listeners. 
-    * @param sentence The sentence to be sent in a POST request if clicked on.
     */
-    function setupFeedBackButtons(sentence) {
-        $("#yes").show(); 
-        $("#no").show(); 
-        $("#yes").click({sentence: sentence, wasFunny : true}, reportResults);
-        $("#no").click({sentence: sentence, wasFunny : false}, reportResults);
+    function setupFeedBackButtons() {
+        $("#feedback-container").show();
+        $("#yes").show();
+        $("#no").show();
+        $("#yes").click({sentence: SENTENCE, wasFunny : true}, reportResults);
+        $("#no").click({sentence: SENTENCE, wasFunny : false}, reportResults);
         $("#feedback").text("Did this impress your colleagues (or did you find it funny)?");
     }
 
