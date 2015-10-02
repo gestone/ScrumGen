@@ -8,6 +8,7 @@ import urllib2  # for making requests to the HackerNews API
 import re
 import psycopg2
 import hashlib
+import os
 
 from bs4 import BeautifulSoup # for parsing HackerNews
 from hackernews import HackerNews # for getting all the HackerNews posting ids
@@ -166,7 +167,7 @@ class Scraper(object):
         else:
             self.logger.debug("Attempting to insert %d phrases into the database" \
                                 % len(self.phrases))
-            conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+            conn = psycopg2.connect(database=os.environ["DATABASE"], user=os.environ["USER"])
             cur = conn.cursor()
 
             successful_insertion = 0
