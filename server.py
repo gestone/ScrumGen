@@ -5,6 +5,7 @@ REST API for generating sentences.
 import logging
 import psycopg2
 import threading
+import os
 
 from flask import Flask, jsonify, request
 from logging.handlers import RotatingFileHandler
@@ -44,7 +45,7 @@ def insert_sentence_into_db(sentence, funny):
     'sentence' is the sentence to be inserted, 'funny' is whether or not
     the sentence was funny or not.
     """
-    conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+    conn = psycopg2.connect(database=os.environ["DATABASE"], user=os.environ["USER"])
     cur = conn.cursor()
 
     app.logger.debug("Attempting to insert %s..." % sentence)

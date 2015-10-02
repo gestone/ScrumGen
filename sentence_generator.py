@@ -4,7 +4,7 @@ Generates random sentences using Markov Models.
 import psycopg2
 import random
 import re
-import string
+import os
 
 from nltk import bigrams  # to get tuples from a sentence in the form: (s0, s1), (s1, s2)
 
@@ -108,7 +108,7 @@ class SentenceGenerator(object):
         Queries the phrases to be trained on from the PostgresDB.
         """
         self.logger.debug("Querying phrases from the DB...")
-        conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+        conn = psycopg2.connect(database=os.environ["DATABASE"], user=os.environ["USER"])
         cur = conn.cursor()
         cur.execute("SELECT phrase FROM phrases ORDER BY fetch_date DESC")
         self.logger.debug("Success, returning results")
