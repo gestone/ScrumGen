@@ -4,6 +4,7 @@ funny or not.
 """
 import string
 import math
+import os
 import psycopg2
 
 from nltk import bigrams
@@ -106,7 +107,7 @@ class SentenceClassifier(object):
         if the sentences contained in the file are classified as funny or not.
         """
         self.logger.debug("Querying sentences from the DB...")
-        conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+        conn = psycopg2.connect(database=os.environ["DATABASE"], user=os.environ["USER"])
         cur = conn.cursor()
         cur.execute("SELECT sentence, funny FROM funny_sentences")
         self.logger.debug("Successfully retrieved sentences from the DB")
@@ -122,7 +123,7 @@ class SentenceClassifier(object):
         'sentence' is the sentence to be inserted, 'funny' is whether or not
         the sentence was funny or not.
         """
-        conn = psycopg2.connect(database="textclassify", user="justinharjanto")
+        conn = psycopg2.connect(database=os.environ["DATABASE"], user=os.environ["USER"])
         cur = conn.cursor()
 
         self.logger.debug("Attempting to insert %s..." % sentence)
