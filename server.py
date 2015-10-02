@@ -13,6 +13,7 @@ from sentence_generator import SentenceGenerator
 from sentence_classifier import SentenceClassifier
 
 app = Flask(__name__)
+generate = None
 
 SCRAPING_INTERVAL = 3600
 
@@ -22,8 +23,6 @@ def generate_sentence():
     Generates a sentence and sends a JSON response in the form:
     {sentence : "foo bar."}.
     """
-    classifier = SentenceClassifier(app.logger)
-    generate = SentenceGenerator(classifier, app.logger)
     sentence = generate.generate_sentence(initial_word="I")
     app.logger.info("Generated sentence: %s" % sentence)
     return jsonify(sentence=sentence)
@@ -69,10 +68,10 @@ def setup_logger():
     """
     formatter = logging.Formatter("[%(asctime)s] {%(pathname)s%(lineno)d} %(message)s")
     handler = RotatingFileHandler("server.log", maxBytes=10000, backupCount=1)
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(logging.INFO)
     handler.setFormatter(formatter)
     app.logger.addHandler(handler)
-    app.logger.setLevel(logging.DEBUG)
+    app.logger.setLevel(logging.INFO)
 
 def scrape():
     """
@@ -92,5 +91,7 @@ def scrape():
 
 if __name__ == "__main__":
     setup_logger()
+    classifier = SentenceClassifier(app.logger)
+    generate = SentenceGenerator(classifier, app.logger)
     scrape()
     app.run()
