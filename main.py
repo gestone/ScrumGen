@@ -24,23 +24,23 @@ def randomly_generate_past_and_future_phrases(sentence_gen, n):
     for b in za:
         print "Today, I plan " + b
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
-y = SentenceClassifier(logging)
-sentence_gen = SentenceGenerator(y, logging)
-train_on_data(sentence_gen, y)
+# y = SentenceClassifier(logging)
+# sentence_gen = SentenceGenerator(y, logging)
+# train_on_data(sentence_gen, y)
 # y.train_classifier_from_file("yesterday_train_non_funny.txt", False)
 # y.train_classifier_from_file("yesterday_train_funny.txt", True)
-# x = Scraper(logging)
-# x.gather_reddit_data()
-# phrases = x.phrases
-# print "reddit data gathered"
-# print "the list is now " + str(len(phrases)) + " long "
+x = Scraper(logging)
+x.gather_reddit_data()
+phrases = x.phrases
+print "reddit data gathered"
+print "the list is now " + str(len(phrases)) + " long "
 # x.gather_hn_data()
 # phrases = x.phrases
 # print "hn data gathered"
 # print "the list is now " + str(len(phrases)) + " long "
-# x.insert_into_db()
+x.insert_into_db()
 # for phrase in phrases:
 #     sentence_gen.train_model(phrase)
 
