@@ -3,7 +3,7 @@
  */
 
 var request = require('request');
-var host = "localhost:5000";
+var host = process.env.API_HOST;
 
 exports.getSentence = function(req, res) {
     request
