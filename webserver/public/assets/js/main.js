@@ -4,7 +4,7 @@
 
     var HEIGHT_SCALE = 5;
     var WINDOW_CUTOFF = 1000; // to rescale properly for mobile devices
-    var HOST = "localhost:8080";
+    var HOST = "52.88.96.248:8080";
     var SENTENCE = "";
 
     /**
