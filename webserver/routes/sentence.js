@@ -3,7 +3,7 @@
  */
 
 var request = require('request');
-var host = process.env.[API_HOST];
+var host = process.env['API_HOST'];
 
 exports.getSentence = function(req, res) {
     request
