@@ -95,4 +95,4 @@ if __name__ == "__main__":
     classifier = SentenceClassifier(app.logger)
     generate = SentenceGenerator(classifier, app.logger)
     scrape()
-    app.run(host='0.0.0.0', port=os.environ["FLASK_PORT"])
+    app.run(host='0.0.0.0', port=int(os.environ["FLASK_PORT"]))
